@@ -1,6 +1,7 @@
 # visualizer.py
 
 import graphviz
+import os  # <-- ДОБАВИЛИ ДЛЯ РАБОТЫ С ПУТЯМИ
 from data_structures import Node
 from typing import Optional, List
 from rich import print as rprint
@@ -27,23 +28,21 @@ def _build_gv_tree(dot: graphviz.Digraph, node: Optional[Node]):
     node_id = str(id(node))
     
     if node.symbol:
-        # --- ЛИСТ (z1, z2...) ---
+        # ЛИСТ (z1, z2...)
         dot.node(
             name=node_id,
-            # Округляем до 3 знаков, как в примере
             label=f"{node.symbol}\n({node.probability:.3f})",
             shape="box"
         )
     else:
-        # --- ВНУТРЕННИЙ УЗЕЛ (z5z4z3...) ---
+        # ВНУТРЕННИЙ УЗЕЛ (z5z4z3...)
         dot.node(
             name=node_id,
-            # --- ИСПОЛЬЗУЕМ ПОЛЕ 'combined_name' ---
             label=f"{node.combined_name}\n({node.probability:.3f})",
             shape="box"
         )
 
-    # --- Рекурсия и отрисовка веток ---
+    # Рекурсия и отрисовка веток
     if node.left_child:
         left_id = str(id(node.left_child))
         _build_gv_tree(dot, node.left_child)
@@ -54,11 +53,14 @@ def _build_gv_tree(dot: graphviz.Digraph, node: Optional[Node]):
         _build_gv_tree(dot, node.right_child)
         dot.edge(node_id, right_id, label="1")
 
-# --- ФУНКЦИЯ 1 (СТИЛЬ РИС. 3) ---
-def generate_scheme_image(root_node: Node, algo_name: str):
+def generate_scheme_image(root_node: Node, algo_name: str, output_path: str):
     """
-    Генерирует PNG в стиле "Схема" (Рис. 3)
     (Корень внизу, листья вверху, отсортированы по P)
+    
+    Args:
+        root_node (Node): Корень дерева.
+        algo_name (str): Имя алгоритма (для имени файла).
+        output_path (str): Путь к папке (напр. "results/output_1").
     """
     filename = f"{algo_name.replace(' ', '_')}_Tree_Scheme"
     
@@ -81,17 +83,23 @@ def generate_scheme_image(root_node: Node, algo_name: str):
                     if i > 0:
                         s.edge(sorted_leaf_ids[i-1], sorted_leaf_ids[i], style='invis')
         
-        dot.render(filename, format='png', cleanup=True, view=False)
-        rprint(f"[bold green]...Изображение (Схема, Рис. 3) сохранено: [cyan]{filename}.png[/cyan][/bold green]")
+        dot.render(filename, directory=output_path, format='png', cleanup=True, view=False)
+        
+        full_path = os.path.join(output_path, f"{filename}.png")
+        rprint(f"[bold green]...Изображение (Схема) сохранено: [cyan]{full_path}[/cyan][/bold green]")
 
     except Exception as e:
         _handle_gv_error(e)
 
-# --- ФУНКЦИЯ 2 (СТИЛЬ РИС. 4) ---
-def generate_classic_tree_image(root_node: Node, algo_name: str):
+def generate_classic_tree_image(root_node: Node, algo_name: str, output_path: str):
     """
-    Генерирует PNG в стиле "Кодовое дерево" (Рис. 4)
+    Генерирует PNG
     (Корень вверху, листья внизу, авто-раскладка)
+    
+    Args:
+        root_node (Node): Корень дерева.
+        algo_name (str): Имя алгоритма (для имени файла).
+        output_path (str): Путь к папке (напр. "results/output_1").
     """
     filename = f"{algo_name.replace(' ', '_')}_Tree_Classic"
     
@@ -99,16 +107,17 @@ def generate_classic_tree_image(root_node: Node, algo_name: str):
         dot = graphviz.Digraph(comment=f'{algo_name} Classic Tree')
         dot.attr(rankdir='TB') # Сверху-вниз
         
-        # Просто строим дерево, без хаков
         _build_gv_tree(dot, root_node)
         
-        dot.render(filename, format='png', cleanup=True, view=False)
-        rprint(f"[bold green]...Изображение (Дерево, Рис. 4) сохранено: [cyan]{filename}.png[/cyan][/bold green]")
+        # --- ИЗМЕНЕНО: Сохраняем в указанную папку ---
+        dot.render(filename, directory=output_path, format='png', cleanup=True, view=False)
+        
+        full_path = os.path.join(output_path, f"{filename}.png")
+        rprint(f"[bold green]...Изображение (Дерево) сохранено: [cyan]{full_path}[/cyan][/bold green]")
 
     except Exception as e:
         _handle_gv_error(e)
 
-# --- Вспомогательная функция, чтобы не дублировать код ---
 def _handle_gv_error(e: Exception):
     """Обрабатывает ошибки Graphviz"""
     if isinstance(e, graphviz.backend.execute.ExecutableNotFound):
