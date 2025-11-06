@@ -5,6 +5,10 @@ from rich import print as rprint
 
 console = Console()
 
+HARDCODED_PROBS = {
+     'z1': 0.208, 'z2': 0.33, 'z3': 0.115, 'z4': 0.115, 'z5': 0.01,
+     'z6': 0.059, 'z7': 0.037, 'z8': 0.042, 'z9': 0.03, 'z10': 0.054
+ }
 HARDCODED_PROBS = {}
 # HARDCODED_PROBS = {
 #     'z1': 0.1, 'z2': 0.1, 'z3': 0.1, 'z4': 0.1, 'z5': 0.1,
