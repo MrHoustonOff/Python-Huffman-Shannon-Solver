@@ -1,14 +1,14 @@
 import math
 from rich.console import Console
 from rich.table import Table
+from rich.panel import Panel
 from rich import print as rprint
 
 console = Console()
 
-HARDCODED_PROBS = {
-     'z1': 0.208, 'z2': 0.33, 'z3': 0.115, 'z4': 0.115, 'z5': 0.01,
-     'z6': 0.059, 'z7': 0.037, 'z8': 0.042, 'z9': 0.03, 'z10': 0.054
- }
+
+
+
 HARDCODED_PROBS = {}
 # HARDCODED_PROBS = {
 #     'z1': 0.1, 'z2': 0.1, 'z3': 0.1, 'z4': 0.1, 'z5': 0.1,
@@ -56,6 +56,35 @@ def _create_wide_table(probabilities: dict, num_cols: int = 5) -> Table:
         
     return table
 
+def _show_hardcode_suggestion(probabilities: dict):
+    """
+    Показывает пользователю отформатированную строку
+    для копирования в HARDCODED_PROBS.
+    """
+    
+    # 1. Форматируем словарь в красивую строку
+    # (Отсортируем по zN для консистентности)
+    sorted_keys = sorted(probabilities.keys(), key=lambda z: int(z[1:]))
+    
+    # Собираем внутренности словаря
+    # 'z1': 0.1, 'z2': 0.1, ...
+    items_str = ", ".join([f"'{key}': {probabilities[key]}" for key in sorted_keys])
+    
+    # Собираем финальную строку
+    hardcode_string = f"HARDCODED_PROBS = {{ {items_str} }}"
+    
+    # 2. Выводим в красивой панельке
+    rprint(
+        Panel(
+            f"[dim]Чтобы не вводить данные заново, скопируйте это\n"
+            f"в начало файла [bold]input_handler.py[/bold]:[/dim]\n\n"
+            f"[bold yellow]{hardcode_string}[/bold yellow]",
+            title="💡 Подсказка",
+            border_style="blue",
+            padding=(1, 2)
+        )
+    )
+    
 # --- MODIFIED MAIN FUNCTION ---
 def get_probabilities() -> dict:
     """
@@ -67,7 +96,8 @@ def get_probabilities() -> dict:
         rprint("\n" + "="*50)
 
         if HARDCODED_PROBS:
-            rprint("[yellow]Обнаружены захардкоженные вероятности. Используем их...[/yellow]")
+            rprint("[yellow]Обнаружены захардкоженные вероятности. Используем их... [/yellow]")
+            rprint("[yellow]Если вы не согласны - замените константу на[/yellow] [red]HARDCODED_PROBS = {}[/red] [yellow]в файле[/yellow] [red]input_handler.py[/red]")
             probabilities = HARDCODED_PROBS
         else:
             rprint("[cyan]Режим ручного ввода.[/cyan] (введите [bold]-1[/bold] для завершения)")
@@ -92,7 +122,7 @@ def get_probabilities() -> dict:
         if not probabilities:
             rprint("[red]Нет данных для обработки. Начинаем заново...[/red]\n")
             continue
-
+		
         # 3.1. Проверка суммы
         total_prob = sum(probabilities.values())
         if math.isclose(total_prob, 1.0):
@@ -100,7 +130,7 @@ def get_probabilities() -> dict:
             sum_ok = True
         else:
             rprint(f"\n[red]Сумма вероятностей: {total_prob:.4f} (ОШИБКА! Сумма не равна 1.0)[/red]")
-            sum_ok = False
+            sum_ok = True
 
         # 3.2. Вывод таблицы для подтверждения
         rprint("[bold]Вот ваши вероятности:[/bold]")
@@ -117,6 +147,8 @@ def get_probabilities() -> dict:
         if choice == '1':
             if sum_ok:
                 rprint("[bold green]Вероятности приняты. Продолжаем...[/bold green]")
+                if not HARDCODED_PROBS: # Показываем, только если вводили вручную
+                    _show_hardcode_suggestion(probabilities)
                 sorted_keys = sorted(probabilities.keys(), key=lambda z: int(z[1:]))
                 return {symbol: probabilities[symbol] for symbol in sorted_keys}
             else:
