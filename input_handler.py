@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich import print as rprint
-from random_probs import generate_probabilities 
+from random_probs import generate_probabilities # (Предполагаем, что random_probs.py у тебя есть)
 
 # --- Глобальные переменные ---
 console = Console()
@@ -16,11 +16,11 @@ LARGE_INPUT_THRESHOLD = 100
 HARDCODED_PROBS = {}
 
 # Раскомментируйте эту строку для теста с N-ым кол-вом случайных величин
-# HARDCODED_PROBS = generate_probabilities(999, 
-#                                          prefix='z', 
-#                                          method='dirichlet', 
-#                                          decimals=6,
-#                                          min_prob=1e-9)
+HARDCODED_PROBS = generate_probabilities(3000, 
+                                         prefix='z', 
+                                         method='dirichlet', 
+                                         decimals=6,
+                                         min_prob=1e-9)
 
 
 def _create_wide_table(probabilities: Dict[str, float], num_cols: int = 5) -> Table:
@@ -86,9 +86,9 @@ def get_probabilities() -> Dict[str, float]:
     """
     Главная функция для ввода и валидации вероятностей.
     
-    Циклически запрашивает ввод, пока пользователь не введет корректные
-    данные (сумма p == 1.0) и не подтвердит их (ввод '1').
-    Автоматически пропускает отрисовку таблиц, если N > 100.
+    Сначала проверяет HARDCODED_PROBS. Если они есть,
+    предлагает выбор: использовать их или перейти к ручному вводу.
+    Циклически запрашивает ввод, пока данные не будут подтверждены.
 
     Returns:
         dict: Провалидированный словарь с вероятностями {'z1': 0.1, ...}.
@@ -99,10 +99,25 @@ def get_probabilities() -> Dict[str, float]:
         rprint("\n" + "="*50)
 
         if HARDCODED_PROBS:
-            rprint("[yellow]Обнаружены захардкоженные вероятности. Используем их... [/yellow]")
-            rprint("[yellow]Если вы не согласны - замените константу на[/yellow] [red]HARDCODED_PROBS = {}[/red] [yellow]в файле[/yellow] [red]input_handler.py[/red]")
-            probabilities = HARDCODED_PROBS
-        else:
+            rprint("[yellow]Обнаружены захардкоженные вероятности.[/yellow]")
+            console.print(" [1] Использовать захардкоженные")
+            console.print(" [2] Перейти к ручному вводу")
+            choice = console.input("Ваш выбор (1/2): ")
+            
+            if choice == '1':
+                rprint("[yellow]Используем захардкоженные...[/yellow]")
+                probabilities = HARDCODED_PROBS
+            elif choice == '2':
+                rprint("[cyan]Переходим к ручному вводу...[/cyan]")
+                pass
+            else:
+                rprint("[red]Неверный ввод. Пожалуйста, выберите 1 или 2.[/red]")
+                continue # Перезапускаем цикл
+        
+        # Ручной ввод запускается, если:
+        # 1. HARDCODED_PROBS пуст
+        # 2. HARDCODED_PROBS есть, но пользователь выбрал [2]
+        if not probabilities:
             rprint("[cyan]Режим ручного ввода.[/cyan] (введите [bold]-1[/bold] для завершения)")
             i = 1
             while True:
@@ -126,7 +141,7 @@ def get_probabilities() -> Dict[str, float]:
             rprint("[red]Нет данных для обработки. Начинаем заново...[/red]\n")
             continue
         
-        # --- НОВЫЙ БЛОК: ПРОВЕРКА НА N > 100 ---
+        # Проверка на N > 100
         N = len(probabilities)
         is_large_input = (N > LARGE_INPUT_THRESHOLD)
         
@@ -176,5 +191,5 @@ if __name__ == "__main__":
     
     rprint("\n[bold]Основная программа (main.py) получила данные:[/bold]")
     console.print(f"Получено {len(final_probabilities)} символов.")
-    if len(final_probabilities) <= 20: # Не будем спамить, если N=3000
+    if len(final_probabilities) <= 20:
         console.print(final_probabilities)
