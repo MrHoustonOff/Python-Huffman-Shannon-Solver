@@ -1,20 +1,31 @@
 import math
+from typing import Dict
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich import print as rprint
-from typing import Dict
+from random_probs import generate_probabilities 
 
 # --- Глобальные переменные ---
 console = Console()
 
+# Порог, после которого отключается "раскошный" вывод
+LARGE_INPUT_THRESHOLD = 100
+
 # Оставьте словарь пустым ({}), чтобы включить ручной ввод.
-HARDCODED_PROBS = {}
+# HARDCODED_PROBS = {}
+
+# Раскомментируйте эту строку для теста с N-ым кол-вом случайных величин
+HARDCODED_PROBS = generate_probabilities(999, 
+                                         prefix='z', 
+                                         method='dirichlet', 
+                                         decimals=6,
+                                         min_prob=1e-9)
 
 
 def _create_wide_table(probabilities: Dict[str, float], num_cols: int = 5) -> Table:
     """
-    Создает таблицу вероятностей (N столбцов)
+    Создает "широкую" таблицу вероятностей (N столбцов)
     в удобном для чтения формате (Имя_zN, затем P_zN).
 
     Args:
@@ -27,28 +38,21 @@ def _create_wide_table(probabilities: Dict[str, float], num_cols: int = 5) -> Ta
     
     table = Table(title="Введенные вероятности", padding=(0, 2), show_header=False)
     
-    # Добавляем N пустых столбцов с центрированием
     for _ in range(num_cols):
         table.add_column(justify="center")
 
-    # Сортируем ключи (z1, z2... z10)
     sorted_keys = sorted(probabilities.keys(), key=lambda z: int(z[1:]))
 
-    # Делим ключи на "чанки" (куски) по num_cols штук
     chunks = []
     for i in range(0, len(sorted_keys), num_cols):
         chunks.append(sorted_keys[i : i + num_cols])
     
-    # Для каждого чанка (['z1', 'z2',...]) добавляем 2 строки
     for chunk in chunks:
-        # 1. Строка с именами
         symbol_row = [f"[cyan]{symbol}[/cyan]" for symbol in chunk]
-        
-        # 2. Строка с вероятностями
         prob_row = [f"[magenta]{probabilities[symbol]:.4f}[/magenta]" for symbol in chunk]
         
         table.add_row(*symbol_row)
-        table.add_row(*prob_row, end_section=True) # end_section=True добавит разделитель
+        table.add_row(*prob_row, end_section=True)
         
     return table
 
@@ -63,7 +67,6 @@ def _show_hardcode_suggestion(probabilities: Dict[str, float]):
     
     sorted_keys = sorted(probabilities.keys(), key=lambda z: int(z[1:]))
     
-    # 'z1': 0.1, 'z2': 0.1, ...
     items_str = ", ".join([f"'{key}': {probabilities[key]}" for key in sorted_keys])
     
     hardcode_string = f"HARDCODED_PROBS = {{ {items_str} }}"
@@ -85,6 +88,7 @@ def get_probabilities() -> Dict[str, float]:
     
     Циклически запрашивает ввод, пока пользователь не введет корректные
     данные (сумма p == 1.0) и не подтвердит их (ввод '1').
+    Автоматически пропускает отрисовку таблиц, если N > 100.
 
     Returns:
         dict: Провалидированный словарь с вероятностями {'z1': 0.1, ...}.
@@ -122,6 +126,10 @@ def get_probabilities() -> Dict[str, float]:
             rprint("[red]Нет данных для обработки. Начинаем заново...[/red]\n")
             continue
         
+        # --- НОВЫЙ БЛОК: ПРОВЕРКА НА N > 100 ---
+        N = len(probabilities)
+        is_large_input = (N > LARGE_INPUT_THRESHOLD)
+        
         # Проверка суммы
         total_prob = sum(probabilities.values())
         if math.isclose(total_prob, 1.0):
@@ -129,12 +137,15 @@ def get_probabilities() -> Dict[str, float]:
             sum_ok = True
         else:
             rprint(f"\n[red]Сумма вероятностей: {total_prob:.4f} (ОШИБКА! Сумма не равна 1.0)[/red]")
-            sum_ok = False  # <--- ЗДЕСЬ БЫЛ БАГ (стояло True)
+            sum_ok = False
 
-        # Вывод таблицы для подтверждения
-        rprint("[bold]Вот ваши вероятности:[/bold]")
-        table = _create_wide_table(probabilities, num_cols=5)
-        console.print(table)
+        # Вывод таблицы для подтверждения (только если N не слишком большое)
+        if not is_large_input:
+            rprint("[bold]Вот ваши вероятности:[/bold]")
+            table = _create_wide_table(probabilities, num_cols=5)
+            console.print(table)
+        else:
+            rprint(f"[yellow]Ввод (N={N}) слишком большой для отображения таблицы.[/yellow]")
 
         # Подтверждение пользователя
         choice = console.input("Все верно? ([bold green]1[/bold green] - да / [bold red]0[/bold red] - нет): ")
@@ -142,12 +153,13 @@ def get_probabilities() -> Dict[str, float]:
         if choice == '1':
             if sum_ok:
                 rprint("[bold green]Вероятности приняты. Продолжаем...[/bold green]")
-                if not HARDCODED_PROBS: # Показываем, только если вводили вручную
+                # Показываем подсказку, только если вводили вручную И N не слишком большое
+                if not HARDCODED_PROBS and not is_large_input:
                     _show_hardcode_suggestion(probabilities)
+                
                 sorted_keys = sorted(probabilities.keys(), key=lambda z: int(z[1:]))
                 return {symbol: probabilities[symbol] for symbol in sorted_keys}
             else:
-                # Теперь этот блок будет корректно срабатывать, если sum_ok = False
                 rprint("[red]Вы подтвердили, но сумма не равна 1.0. Пожалуйста, введите данные заново.[/red]\n")
         elif choice == '0':
             rprint("[yellow]Перевводим...[/yellow]\n")
@@ -158,9 +170,11 @@ if __name__ == "__main__":
     """
     Тестовый запуск для проверки этого модуля.
     """
-    rprint("[bold blue]Запуск модуля ввода данных[/bold blue]")
+    rprint("[bold blue]Запуск модуля ввода данных...[/bold blue]")
     
     final_probabilities = get_probabilities()
     
     rprint("\n[bold]Основная программа (main.py) получила данные:[/bold]")
-    console.print(final_probabilities)
+    console.print(f"Получено {len(final_probabilities)} символов.")
+    if len(final_probabilities) <= 20: # Не будем спамить, если N=3000
+        console.print(final_probabilities)
