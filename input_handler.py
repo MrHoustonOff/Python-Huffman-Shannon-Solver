@@ -13,14 +13,14 @@ console = Console()
 LARGE_INPUT_THRESHOLD = 100
 
 # Оставьте словарь пустым ({}), чтобы включить ручной ввод.
-# HARDCODED_PROBS = {}
+HARDCODED_PROBS = {}
 
 # Раскомментируйте эту строку для теста с N-ым кол-вом случайных величин
-HARDCODED_PROBS = generate_probabilities(999, 
-                                         prefix='z', 
-                                         method='dirichlet', 
-                                         decimals=6,
-                                         min_prob=1e-9)
+# HARDCODED_PROBS = generate_probabilities(999, 
+#                                          prefix='z', 
+#                                          method='dirichlet', 
+#                                          decimals=6,
+#                                          min_prob=1e-9)
 
 
 def _create_wide_table(probabilities: Dict[str, float], num_cols: int = 5) -> Table:
