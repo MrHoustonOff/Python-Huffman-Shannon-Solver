@@ -13,7 +13,7 @@ def calculate_entropy(probabilities: Dict[str, float]) -> Tuple[float, str, str,
     (result, formula_general, formula_expanded, formula_substituted).
     """
     
-    formula_general = "H(Z) = -Σ [ p(zi) * log2(p(zi)) ]"
+    formula_general = "H(Z) = -Sum [ p(zi) * log2(p(zi)) ]"
     formula_expanded_parts = []
     formula_substituted_parts = []
     
@@ -43,7 +43,7 @@ def calculate_average_length(probabilities: Dict[str, float], codes: Dict[str, s
     (result, formula_general, formula_expanded, formula_substituted).
     """
     
-    formula_general = "L_avg = Σ [ p(zi) * L(zi) ]"
+    formula_general = "L_avg = Sum [ p(zi) * L(zi) ]"
     formula_expanded_parts = []
     formula_substituted_parts = []
     
@@ -76,7 +76,7 @@ def calculate_kraft_inequality(codes: Dict[str, str]) -> Tuple[float, str, str, 
     (result, formula_general, formula_expanded, formula_substituted).
     """
     
-    formula_general = "K = Σ [ 2^(-L(zi)) ]"
+    formula_general = "K = Sum [ 2^(-L(zi)) ]"
     formula_expanded_parts = []
     formula_substituted_parts = []
     
